@@ -3,16 +3,16 @@ from enum import Enum
 from leafnode import LeafNode
 
 class TextType(Enum):
-    TEXT = "plain text"
-    BOLD = "**bold**"
-    ITALIC = "_italic_"
-    CODE = "`code`"
-    LINK = "[text](url)"
-    IMAGE = "![alt](url)"
+    TEXT = "TEXT"
+    BOLD = "BOLD"
+    ITALIC = "ITALIC"
+    CODE = "CODE"
+    LINK = "LINK"
+    IMAGE = "IMAGE"
 
 class TextNode:
 
-    def __init__(self, text:str, text_type:TextType, url = None):
+    def __init__(self, text:str, text_type:TextType = TextType.TEXT, url = None):
         self.text = text
         self.text_type = text_type
         self.url = url
@@ -23,7 +23,7 @@ class TextNode:
     def __repr__(self):
         return f"TextNode({self.text}, {self.text_type.value}, {self.url})"
 
-    
+
 def text_node_to_html_node(text_node: TextNode) -> LeafNode:
     if text_node.text_type == TextType.TEXT:
         return LeafNode(value=text_node.text)
@@ -37,4 +37,3 @@ def text_node_to_html_node(text_node: TextNode) -> LeafNode:
         return LeafNode(value=text_node.text, tag="a", props={"href":text_node.url})
     elif text_node.text_type == TextType.IMAGE:
         return LeafNode(tag="img", props={"alt":text_node.text, "src":text_node.url})
-        
