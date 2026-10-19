@@ -217,7 +217,7 @@ def copy_contents(source:str, destination:str):
             print('Failed to create %s. Reason: %s' % (destination_file_path, e))
 
 
-def generate_page(from_path, template_path, dest_path):
+def generate_page(from_path, template_path, dest_path, basepath:str="/"):
     print(f"Generating page from {from_path} to {dest_path} using {template_path}...")
 
     content = template = None
@@ -235,11 +235,12 @@ def generate_page(from_path, template_path, dest_path):
     content_html = markdown_to_html_node(content).to_html()
 
     page_html = template.replace("{{ Title }}", title).replace("{{ Content }}", content_html)
+    page_html = page_html.replace('href="/', f'href="{basepath}').replace('src="/', f'src="{basepath}')
 
     with open(dest_path, "w") as file:
         file.write(page_html)
 
-def generate_pages_recursive(dir_path_content, template_path, dest_dir_path):
+def generate_pages_recursive(dir_path_content, template_path, dest_dir_path, basepath:str="/"):
     for filename in os.listdir(dir_path_content):
         source_file_path = os.path.join(dir_path_content, filename)
 
@@ -249,14 +250,14 @@ def generate_pages_recursive(dir_path_content, template_path, dest_dir_path):
 
                 print(f'Using md file {source_file_path} to generate {destination_file_path}')
 
-                generate_page(source_file_path, template_path, destination_file_path)
+                generate_page(source_file_path, template_path, destination_file_path, basepath)
             elif os.path.isdir(source_file_path):
                 print(f'Looking inside folder {source_file_path}')
 
                 destination_file_path = os.path.join(dest_dir_path, filename)
 
                 os.makedirs(destination_file_path)
-                generate_pages_recursive(source_file_path, template_path, destination_file_path)
+                generate_pages_recursive(source_file_path, template_path, destination_file_path, basepath)
 
         except Exception as e:
             print('Failed to parse %s. Reason: %s' % (source_file_path, e))
