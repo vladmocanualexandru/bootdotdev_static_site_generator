@@ -1,5 +1,5 @@
 import unittest
-from utils import split_nodes_delimiter, extract_markdown_images, extract_markdown_links, split_nodes_image, InvalidSyntaxException, split_nodes_link, text_to_textnodes, markdown_to_blocks, block_to_block_type, BlockType
+from utils import split_nodes_delimiter, extract_markdown_images, extract_markdown_links, split_nodes_image, InvalidSyntaxException, split_nodes_link, text_to_textnodes, markdown_to_blocks, block_to_block_type, BlockType, markdown_to_html_node
 from textnode import TextNode, TextType
 
 class TestUtils(unittest.TestCase):
@@ -431,6 +431,124 @@ Quote line 2
 3 Third - LIST BREAKING ITEM
 """
         self.assertNotEqual(block_to_block_type(text), BlockType.ORDERED_LIST)
+
+    def test_markdown_to_html_node_two_paragraphs(self):
+        md = """
+This is **bolded** paragraph
+text in a p
+tag here
+
+This is another paragraph with _italic_ text and `code` here
+
+"""
+
+        html_block = markdown_to_html_node(md)
+
+        self.assertEqual(html_block.to_html(), "<div><p>This is <b>bolded</b> paragraph\ntext in a p\ntag here</p><p>This is another paragraph with <i>italic</i> text and <code>code</code> here</p></div>")
+
+    def test_markdown_to_html_node_paragraph_heading(self):
+        md = """
+This is a paragraph
+
+# This is a heading
+"""
+
+        html_block = markdown_to_html_node(md)
+
+        self.assertEqual(html_block.to_html(), "<div><p>This is a paragraph</p><h1>This is a heading</h1></div>")
+
+    def test_markdown_to_html_node_one_six_headings(self):
+        md = """
+# Heading1
+
+## Heading2
+
+### Heading3
+
+#### Heading4
+
+##### Heading5
+
+###### Heading6
+"""
+
+        html_block = markdown_to_html_node(md)
+
+        self.assertEqual(html_block.to_html(), "<div><h1>Heading1</h1><h2>Heading2</h2><h3>Heading3</h3><h4>Heading4</h4><h5>Heading5</h5><h6>Heading6</h6></div>")
+
+    def test_markdown_to_html_node_paragraph_code(self):
+        md = """
+This is a paragraph
+
+```
+This is text that _should_ remain
+the **same** even with inline stuff
+```
+"""
+
+        html_block = markdown_to_html_node(md)
+
+        self.assertEqual(html_block.to_html(), "<div><p>This is a paragraph</p><pre><code>This is text that _should_ remain\nthe **same** even with inline stuff</code></pre></div>")
+
+    def test_markdown_to_html_node_paragraph_quote(self):
+        md = """
+This is a paragraph
+
+> This
+> is
+> a
+> quote
+"""
+
+        html_block = markdown_to_html_node(md)
+
+        self.assertEqual(html_block.to_html(), "<div><p>This is a paragraph</p><blockquote>This\nis\na\nquote</blockquote></div>")
+
+    def test_markdown_to_html_node_paragraph_ul(self):
+        md = """
+This is a paragraph
+
+- no order
+- unordered
+- random distribution
+"""
+
+        html_block = markdown_to_html_node(md)
+
+        self.assertEqual(html_block.to_html(), "<div><p>This is a paragraph</p><ul><li>no order</li><li>unordered</li><li>random distribution</li></ul></div>")
+
+    def test_markdown_to_html_node_paragraph_ol_1_3(self):
+        md = """
+This is a paragraph
+
+1. uno
+2. dos
+3. tres
+"""
+
+        html_block = markdown_to_html_node(md)
+
+        self.assertEqual(html_block.to_html(), "<div><p>This is a paragraph</p><ol><li>uno</li><li>dos</li><li>tres</li></ol></div>")
+
+    def test_markdown_to_html_node_paragraph_ol_1_10(self):
+        md = """
+1. |
+2. ||
+3. |||
+4. |V
+5. V
+6. V|
+7. V||
+8. V|||
+9. |X
+10. X
+"""
+
+        html_block = markdown_to_html_node(md)
+
+        self.assertEqual(html_block.to_html(), """<div><ol><li>|</li><li>||</li><li>|||</li><li>|V</li><li>V</li><li>V|</li><li>V||</li><li>V|||</li><li>|X</li><li>X</li></ol></div>""")
+
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,7 +1,9 @@
 import re
 from enum import Enum
 from src.htmlnode import HTMLNode
-from textnode import TextNode, TextType
+from src.leafnode import LeafNode
+from src.parentnode import ParentNode
+from textnode import TextNode, TextType, text_node_to_html_node
 
 class BlockType(Enum):
     PARAGRAPH = "PARAGRAPH"
@@ -140,10 +142,33 @@ def block_to_block_type(markdown:str) -> BlockType:
     return BlockType.PARAGRAPH
 
 def markdown_to_html_node(markdown:str) -> HTMLNode:
-    result = HTMLNode(children=[])
+    result = ParentNode(children=[], tag="div")
 
-    nodes = markdown_to_blocks(markdown)
+    blocks = markdown_to_blocks(markdown)
 
+    for block in blocks:
+        block_type = block_to_block_type(block)
 
+        if block_type == BlockType.PARAGRAPH:
+            result.children.append(ParentNode(tag="p", children=[text_node_to_html_node(text_node) for text_node in text_to_textnodes(block)]))
+        elif block_type == BlockType.HEADING:
+            heading_rank = block.index("# ")
+            block = block[heading_rank+2:]
+            result.children.append(ParentNode(tag=f"h{heading_rank+1}", children=[text_node_to_html_node(text_node) for text_node in text_to_textnodes(block)]))
+        elif block_type == BlockType.CODE:
+            block = block.replace("```\n", "").replace("\n```", "")
+            result.children.append(ParentNode(tag="pre", children=[LeafNode(tag="code", value=block)]))
+        elif block_type == BlockType.QUOTE:
+            block = "\n".join([line[2:] for line in block.split("\n")])
+            result.children.append(LeafNode(tag="blockquote", value=block))
+        elif block_type == BlockType.UNORDERED_LIST:
+            block = "".join([f"<li>{line[2:]}</li>" for line in block.split("\n")])
+            result.children.append(LeafNode(tag="ul", value=block))
+        elif block_type == BlockType.ORDERED_LIST:
+            lines = block.split("\n")
+            for i in range(len(lines)):
+                lines[i] = f"<li>{lines[i][(3 if i<9 else 4):]}</li>"
+
+            result.children.append(LeafNode(tag="ol", value="".join(lines)))
 
     return result
