@@ -1,5 +1,5 @@
 import unittest
-from utils import split_nodes_delimiter, extract_markdown_images, extract_markdown_links, split_nodes_image, InvalidSyntaxException, split_nodes_link, text_to_textnodes, markdown_to_blocks, block_to_block_type, BlockType, markdown_to_html_node
+from utils import split_nodes_delimiter, extract_markdown_images, extract_markdown_links, split_nodes_image, InvalidSyntaxException, split_nodes_link, text_to_textnodes, markdown_to_blocks, block_to_block_type, BlockType, markdown_to_html_node, extract_title, MissingTitleException
 from textnode import TextNode, TextType
 
 class TestUtils(unittest.TestCase):
@@ -517,6 +517,21 @@ This is a paragraph
 
         self.assertEqual(html_block.to_html(), "<div><p>This is a paragraph</p><ul><li>no order</li><li>unordered</li><li>random distribution</li></ul></div>")
 
+    def test_markdown_to_html_node_paragraph_ul_special_blocks(self):
+        md = """
+This is a paragraph
+
+- **bold**
+- _italic_
+- [link](www.link.com)
+- ![image](src.png)
+"""
+
+        html_block = markdown_to_html_node(md)
+
+        self.assertEqual(html_block.to_html(), '<div><p>This is a paragraph</p><ul><li><b>bold</b></li><li><i>italic</i></li><li><a href="www.link.com">link</a></li><li><img alt="image" src="src.png"></img></li></ul></div>')
+
+
     def test_markdown_to_html_node_paragraph_ol_1_3(self):
         md = """
 This is a paragraph
@@ -529,6 +544,21 @@ This is a paragraph
         html_block = markdown_to_html_node(md)
 
         self.assertEqual(html_block.to_html(), "<div><p>This is a paragraph</p><ol><li>uno</li><li>dos</li><li>tres</li></ol></div>")
+
+    def test_markdown_to_html_node_paragraph_ol_special_blocks(self):
+        md = """
+This is a paragraph
+
+1. first **bold**
+2. second _italic_
+3. third [link](www.link.com)
+4. fourth ![image](src.png)
+"""
+
+        html_block = markdown_to_html_node(md)
+
+        self.assertEqual(html_block.to_html(), '<div><p>This is a paragraph</p><ol><li>first <b>bold</b></li><li>second <i>italic</i></li><li>third <a href="www.link.com">link</a></li><li>fourth <img alt="image" src="src.png"></img></li></ol></div>')
+
 
     def test_markdown_to_html_node_paragraph_ol_1_10(self):
         md = """
@@ -548,6 +578,59 @@ This is a paragraph
 
         self.assertEqual(html_block.to_html(), """<div><ol><li>|</li><li>||</li><li>|||</li><li>|V</li><li>V</li><li>V|</li><li>V||</li><li>V|||</li><li>|X</li><li>X</li></ol></div>""")
 
+    def test_extract_title_invalid_1(self):
+        md = """This is an invalid title
+
+        paragraph
+
+        paragraph
+        """
+
+        with self.assertRaises(MissingTitleException):
+             extract_title(md)
+
+    def test_extract_title_invalid_2(self):
+        md = """#This is an invalid title
+
+        paragraph
+
+        paragraph
+        """
+
+        with self.assertRaises(MissingTitleException):
+             extract_title(md)
+
+    def test_extract_title_invalid_3(self):
+        md = """##This is an invalid title
+
+        paragraph
+
+        paragraph
+        """
+
+        with self.assertRaises(MissingTitleException):
+                extract_title(md)
+
+    def test_extract_title_invalid_4(self):
+        md = """## This is an invalid title
+
+        paragraph
+
+        paragraph
+        """
+
+        with self.assertRaises(MissingTitleException):
+                extract_title(md)
+
+    def test_extract_title_valid(self):
+        md = """# This is a valid title
+
+        paragraph
+
+        paragraph
+        """
+
+        self.assertEqual("This is a valid title", extract_title(md))
 
 
 if __name__ == "__main__":
