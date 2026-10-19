@@ -1,5 +1,15 @@
 import re
+from enum import Enum
+from src.htmlnode import HTMLNode
 from textnode import TextNode, TextType
+
+class BlockType(Enum):
+    PARAGRAPH = "PARAGRAPH"
+    HEADING = "HEADING"
+    CODE = "CODE"
+    QUOTE = "QUOTE"
+    UNORDERED_LIST = "UNORDERED_LIST"
+    ORDERED_LIST = "ORDERED_LIST"
 
 class InvalidSyntaxException(RuntimeError):
     def __init__(self):
@@ -92,5 +102,48 @@ def text_to_textnodes(text):
     result = split_nodes_delimiter(result, "`", TextType.CODE)
     result = split_nodes_image(result)
     result = split_nodes_link(result)
+
+    return result
+
+def markdown_to_blocks(markdown:str):
+    lines = markdown.split("\n\n")
+
+    return [line.strip() for line in lines if line.strip()!=""]
+
+def block_to_block_type(markdown:str) -> BlockType:
+    stripped_markdown = markdown.strip()
+
+    if stripped_markdown.startswith("#"):
+        return BlockType.HEADING
+    elif stripped_markdown.startswith("```\n") and stripped_markdown.endswith("\n```"):
+        return BlockType.CODE
+    else:
+        lines = stripped_markdown.split("\n")
+
+        is_quote = is_ul = is_ol = True
+        for i in range(len(lines)):
+            line = lines[i]
+            if not line.startswith(">"):
+                is_quote = False
+            if not line.startswith("- "):
+                is_ul = False
+            if not line.startswith(f"{i+1}. "):
+                is_ol = False
+
+        if is_quote:
+            return BlockType.QUOTE
+        if is_ul:
+            return BlockType.UNORDERED_LIST
+        if is_ol:
+            return BlockType.ORDERED_LIST
+
+    return BlockType.PARAGRAPH
+
+def markdown_to_html_node(markdown:str) -> HTMLNode:
+    result = HTMLNode(children=[])
+
+    nodes = markdown_to_blocks(markdown)
+
+
 
     return result

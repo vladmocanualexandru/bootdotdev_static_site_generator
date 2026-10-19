@@ -1,5 +1,5 @@
 import unittest
-from utils import split_nodes_delimiter, extract_markdown_images, extract_markdown_links, split_nodes_image, InvalidSyntaxException, split_nodes_link, text_to_textnodes
+from utils import split_nodes_delimiter, extract_markdown_images, extract_markdown_links, split_nodes_image, InvalidSyntaxException, split_nodes_link, text_to_textnodes, markdown_to_blocks, block_to_block_type, BlockType
 from textnode import TextNode, TextType
 
 class TestUtils(unittest.TestCase):
@@ -299,6 +299,138 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(nodes[8], TextNode(text=" and a ", text_type=TextType.TEXT))
         self.assertEqual(nodes[9], TextNode(text="link", text_type=TextType.LINK, url="https://boot.dev"))
 
+    def test_markdown_to_blocks_example(self):
+        md = """
+This is **bolded** paragraph
+
+This is another paragraph with _italic_ text and `code` here
+This is the same paragraph on a new line
+
+- This is a list
+- with items
+    """
+        blocks = markdown_to_blocks(md)
+        self.assertEqual(
+            blocks,
+            [
+                "This is **bolded** paragraph",
+                "This is another paragraph with _italic_ text and `code` here\nThis is the same paragraph on a new line",
+                "- This is a list\n- with items",
+            ],
+        )
+
+    def test_markdown_to_blocks_one_block(self):
+        text="""# This is a heading
+        """
+
+        blocks = markdown_to_blocks(text)
+
+        self.assertEqual(len(blocks), 1)
+        self.assertEqual(blocks[0], "# This is a heading")
+
+    def test_markdown_to_blocks_one_block_many_lines(self):
+        text="""# This is a heading
+Still in the same block
+Still there
+        """
+
+        blocks = markdown_to_blocks(text)
+
+        self.assertEqual(len(blocks), 1)
+        self.assertEqual(blocks[0], "# This is a heading\nStill in the same block\nStill there")
+
+    def test_markdown_to_blocks_count(self):
+        text="""# This is a heading
+
+        This is a paragraph of text. It has some **bold** and _italic_ words inside of it.
+
+        - This is the first list item in a list block
+        - This is a list item
+        - This is another list item
+        """
+
+        blocks = markdown_to_blocks(text)
+
+        self.assertEqual(len(blocks), 3)
+
+    def test_block_to_block_type_paragraph(self):
+        text="This is a simple text"
+
+        self.assertEqual(block_to_block_type(text), BlockType.PARAGRAPH)
+
+    def test_block_to_block_type_heading(self):
+        text="# This is a heading"
+
+        self.assertEqual(block_to_block_type(text), BlockType.HEADING)
+
+    def test_block_to_block_type_not_heading(self):
+        text="not # This is not a heading"
+
+        self.assertNotEqual(block_to_block_type(text), BlockType.HEADING)
+
+    def test_block_to_block_type_code(self):
+        text="""
+```
+This is a block of code
+```
+"""
+        self.assertEqual(block_to_block_type(text), BlockType.CODE)
+
+    def test_block_to_block_type_not_code(self):
+        text="""
+``
+This is a not a block of code
+```
+"""
+        self.assertNotEqual(block_to_block_type(text), BlockType.CODE)
+
+    def test_block_to_block_type_quote(self):
+        text="""
+>Quote line 1
+>Quote line 2
+>Quote line 3
+"""
+        self.assertEqual(block_to_block_type(text), BlockType.QUOTE)
+
+    def test_block_to_block_type_not_quote(self):
+        text="""
+>Quote line 1
+Quote line 2
+>Quote line 3
+"""
+        self.assertNotEqual(block_to_block_type(text), BlockType.QUOTE)
+
+    def test_block_to_block_type_ul(self):
+        text="""
+- Unordered item
+- Another one
+- And another one
+"""
+        self.assertEqual(block_to_block_type(text), BlockType.UNORDERED_LIST)
+
+    def test_block_to_block_type_not_ul(self):
+        text="""
+- Unordered item
+-Another one - LIST BREAKING ITEM
+- And another one
+"""
+        self.assertNotEqual(block_to_block_type(text), BlockType.UNORDERED_LIST)
+
+    def test_block_to_block_type_ol(self):
+        text="""
+1. First
+2. Second
+3. Third
+"""
+        self.assertEqual(block_to_block_type(text), BlockType.ORDERED_LIST)
+
+    def test_block_to_block_type_not_ol(self):
+        text="""
+1. First
+2. Second
+3 Third - LIST BREAKING ITEM
+"""
+        self.assertNotEqual(block_to_block_type(text), BlockType.ORDERED_LIST)
 
 if __name__ == "__main__":
     unittest.main()
